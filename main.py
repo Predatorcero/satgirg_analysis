@@ -140,6 +140,6 @@ def plot_degree_distribution(g: nx.Graph):
 
 
 if __name__ == '__main__':
-    chunked_graphs = get_chunks_of_graph("graph_chunks/satgirgs")
+    chunked_graphs = get_chunks_of_graph("power_law_temperature_graphs/satgirgs")
     generate_csv("graph_properties.csv", chunked_graphs)
     # plot_heterogeneity_locality("satgirg_heterogeneity_locality_experiment.csv")
