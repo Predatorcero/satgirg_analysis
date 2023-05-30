@@ -7,6 +7,8 @@ import networkx as nx
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+from bson import ObjectId
+from database_setup import insert_experiment_to_db, insert_datapoint, experiments_for_platform, data_from_experiment, delete_experiment_from_db
 
 
 def read_graph(filename: string):
@@ -88,7 +90,7 @@ def calculate_clustering_coefficient(g: nx.Graph):
     return nx.average_clustering(g)
 
 
-def generate_csv(filename: string, graph_dict: dict):
+def calculate_properties(graph_dict: dict, experiment_id: ObjectId):
     measurement_entries = []
 
     for param_key in graph_dict:
@@ -97,36 +99,33 @@ def generate_csv(filename: string, graph_dict: dict):
         sum_average_degree = 0
         # sum_diameter = 0
         sum_heterogeneity = 0
-        sum_locality = 0
-        sum_triangles = 0
+        sum_clustering = 0
         for graph in graph_dict[param_key]:
             sum_number_of_nodes += graph.number_of_nodes()
             sum_number_of_edges += graph.number_of_edges()
             sum_average_degree += calculate_average_degree(graph)
             # sum_diameter += calculate_diameter(graph)
             sum_heterogeneity += calculate_heterogeneity(graph)
-            sum_locality += calculate_clustering_coefficient(graph)
-            # sum_triangles += sum(nx.triangles(graph).values()) / 3
+            sum_clustering += calculate_clustering_coefficient(graph)
 
         number_of_nodes_measurement = sum_number_of_nodes / len(graph_dict[param_key])
         number_of_edges_measurement = sum_number_of_edges / len(graph_dict[param_key])
         average_degree_measurement = sum_average_degree / len(graph_dict[param_key])
         # diameter_measurement = sum_diameter / len(graph_dict[param_key])
         heterogeneity_measurement = sum_heterogeneity / len(graph_dict[param_key])
-        locality_measurement = sum_locality / len(graph_dict[param_key])
-        measurement_entries.append({"param_config": param_key,
-                                     "number_of_nodes": number_of_nodes_measurement,
-                                     "number_of_edges": number_of_edges_measurement,
-                                     "average_degree": average_degree_measurement,
-        #                             "diameter": diameter_measurement,
-                                     "heterogeneity": heterogeneity_measurement,
-                                     "locality": locality_measurement})
-        # print(f"Triangles: {sum_triangles / len(graph_dict[param_key])}")
+        clustering_measurement = sum_clustering / len(graph_dict[param_key])
+        insert_datapoint(experiment_id,
+                         {"param_config": param_key,
+                          "number_of_nodes": round(number_of_nodes_measurement),
+                          "number_of_edges": round(number_of_edges_measurement),
+                          "average_degree": average_degree_measurement,
+                          # "diameter": diameter_measurement,
+                          "heterogeneity": heterogeneity_measurement,
+                          "average_clustering": clustering_measurement},
+                         "thesis_nicola")
+
         # logging
         print(f"added point for parameter configuration {param_key}")
-
-    heterogeneity_locality_df = pd.DataFrame(measurement_entries)
-    heterogeneity_locality_df.to_csv(filename)
 
 
 def plot_heterogeneity_locality(csv):
@@ -186,3 +185,11 @@ if __name__ == '__main__':
     # generate_csv("girg_low_temperature_properties.csv", chunked_graphs)
     plot_number_of_vertices_edges_relation("measurements/satgirg_properties.csv")
     # plot_heterogeneity_locality_difference("measurements/girg_properties.csv", "measurements/satgirg_properties.csv")
+    # delete_experiment_from_db("test-girg-properties", "thesis_nicola")
+    experiments_df = experiments_for_platform("thesis_nicola")
+    # data = data_from_experiment(ObjectId("6462b15e40fecf008c787eb4"), "thesis_nicola")
+    data = data_from_experiment(ObjectId("646397c7d6b97248fd04bae0"), "thesis_nicola")
+    experiment_id = insert_experiment_to_db("test-girg-properties", "thesis_nicola")
+    chunked_graphs = get_chunks_of_graph("power_law_temperature_graphs/girgs")
+    calculate_properties(chunked_graphs, experiment_id)
+    # plot_heterogeneity_locality("satgirg_heterogeneity_locality_experiment.csv")
