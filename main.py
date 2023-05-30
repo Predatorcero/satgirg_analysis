@@ -8,7 +8,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from bson import ObjectId
-from database_setup import insert_experiment_to_db, insert_datapoint, experiments_for_platform, data_from_experiment, delete_experiment_from_db
+from database_setup import insert_experiment_to_db, insert_datapoint, experiments_for_platform, data_from_experiment, \
+    delete_experiment_from_db
 
 
 def read_graph(filename: string):
@@ -128,14 +129,6 @@ def calculate_properties(graph_dict: dict, experiment_id: ObjectId):
         print(f"added point for parameter configuration {param_key}")
 
 
-def plot_heterogeneity_locality(csv):
-    df = pd.read_csv(csv)
-    heterogeneity_list = df["heterogeneity"].tolist()
-    locality_list = df["average_clustering"].tolist()
-    plt.scatter(heterogeneity_list, locality_list)
-    plt.show()
-
-
 def plot_heterogeneity_locality_difference(girg_csv, satgirg_csv):
     girg_df = pd.read_csv(girg_csv)
     satgirg_df = pd.read_csv(satgirg_csv)
@@ -152,7 +145,8 @@ def plot_heterogeneity_locality_difference(girg_csv, satgirg_csv):
     satgirg_locality_list = satgirg_df["average_clustering"].tolist()
     plt.scatter(girg_heterogeneity_list, girg_locality_list, c=girg_edges, label="girgs", cmap='viridis_r', marker='s')
     plt.clim(min_, max_)
-    plt.scatter(satgirg_heterogeneity_list, satgirg_locality_list, c=satgirg_edges, label="satgirgs", cmap='viridis_r', marker='o')
+    plt.scatter(satgirg_heterogeneity_list, satgirg_locality_list, c=satgirg_edges, label="satgirgs", cmap='viridis_r',
+                marker='o')
     plt.clim(min_, max_)
     plt.colorbar().set_label('number of edges', rotation=270, labelpad=15)
 
@@ -179,17 +173,26 @@ def plot_number_of_vertices_edges_relation(graphs: string):
     plt.show()
 
 
-
 if __name__ == '__main__':
-    # chunked_graphs = get_chunks_of_graph("power_law_temperature_graphs/second_girgs")
-    # generate_csv("girg_low_temperature_properties.csv", chunked_graphs)
-    plot_number_of_vertices_edges_relation("measurements/satgirg_properties.csv")
-    # plot_heterogeneity_locality_difference("measurements/girg_properties.csv", "measurements/satgirg_properties.csv")
+    # WARNING: FOR DELETE ONLY
     # delete_experiment_from_db("test-girg-properties", "thesis_nicola")
-    experiments_df = experiments_for_platform("thesis_nicola")
-    # data = data_from_experiment(ObjectId("6462b15e40fecf008c787eb4"), "thesis_nicola")
-    data = data_from_experiment(ObjectId("646397c7d6b97248fd04bae0"), "thesis_nicola")
-    experiment_id = insert_experiment_to_db("test-girg-properties", "thesis_nicola")
-    chunked_graphs = get_chunks_of_graph("power_law_temperature_graphs/girgs")
-    calculate_properties(chunked_graphs, experiment_id)
-    # plot_heterogeneity_locality("satgirg_heterogeneity_locality_experiment.csv")
+
+    # CSV GENERATION
+    # to get experiments of a database
+    # experiments_df = experiments_for_platform("thesis_nicola")
+
+    # to observe content of one experiment id (of a database)
+    # data = data_from_experiment(ObjectId("646397c7d6b97248fd04bae0"), "thesis_nicola")
+
+    # to insert an experiment for a database
+    # experiment_id = insert_experiment_to_db("test-girg-properties", "thesis_nicola")
+
+    # to get chunked graphs (only for power-law/temperature experiment)
+    # chunked_graphs = get_chunks_of_graph("power_law_temperature_graphs/various_ple_temperature_girgs")
+
+    # to insert data into an experiment
+    # calculate_properties(chunked_graphs, experiment_id)
+
+    # PLOTS
+    # plot_heterogeneity_locality_difference("measurements/girg_properties.csv", "measurements/satgirg_properties.csv")
+    plot_number_of_vertices_edges_relation("measurements/satgirg_properties.csv")
