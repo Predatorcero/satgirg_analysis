@@ -60,7 +60,9 @@ def get_chunks_of_graph(directory: string):
 
 
 def calculate_average_degree(g: nx.Graph):
-    return nx.average_degree_connectivity(g)
+    degrees = [g.degree(n) for n in g.nodes]
+    number_of_vertices = len(g.nodes)
+    return sum(degrees) / number_of_vertices
 
 
 def calculate_diameter(g: nx.Graph):
@@ -93,31 +95,33 @@ def generate_csv(filename: string, graph_dict: dict):
         sum_number_of_nodes = 0
         sum_number_of_edges = 0
         sum_average_degree = 0
-        sum_diameter = 0
+        # sum_diameter = 0
         sum_heterogeneity = 0
         sum_locality = 0
+        sum_triangles = 0
         for graph in graph_dict[param_key]:
             sum_number_of_nodes += graph.number_of_nodes()
             sum_number_of_edges += graph.number_of_edges()
             sum_average_degree += calculate_average_degree(graph)
-            sum_diameter += calculate_diameter(graph)
+            # sum_diameter += calculate_diameter(graph)
             sum_heterogeneity += calculate_heterogeneity(graph)
             sum_locality += calculate_clustering_coefficient(graph)
+            # sum_triangles += sum(nx.triangles(graph).values()) / 3
 
         number_of_nodes_measurement = sum_number_of_nodes / len(graph_dict[param_key])
         number_of_edges_measurement = sum_number_of_edges / len(graph_dict[param_key])
         average_degree_measurement = sum_average_degree / len(graph_dict[param_key])
-        diameter_measurement = sum_diameter / len(graph_dict[param_key])
+        # diameter_measurement = sum_diameter / len(graph_dict[param_key])
         heterogeneity_measurement = sum_heterogeneity / len(graph_dict[param_key])
         locality_measurement = sum_locality / len(graph_dict[param_key])
         measurement_entries.append({"param_config": param_key,
-                                    "number_of_nodes": number_of_nodes_measurement,
-                                    "number_of_edges": number_of_edges_measurement,
-                                    "average_degree": average_degree_measurement,
-                                    "diameter": diameter_measurement,
-                                    "heterogeneity": heterogeneity_measurement,
-                                    "locality": locality_measurement})
-
+                                     "number_of_nodes": number_of_nodes_measurement,
+                                     "number_of_edges": number_of_edges_measurement,
+                                     "average_degree": average_degree_measurement,
+        #                             "diameter": diameter_measurement,
+                                     "heterogeneity": heterogeneity_measurement,
+                                     "locality": locality_measurement})
+        # print(f"Triangles: {sum_triangles / len(graph_dict[param_key])}")
         # logging
         print(f"added point for parameter configuration {param_key}")
 
@@ -128,8 +132,34 @@ def generate_csv(filename: string, graph_dict: dict):
 def plot_heterogeneity_locality(csv):
     df = pd.read_csv(csv)
     heterogeneity_list = df["heterogeneity"].tolist()
-    locality_list = df["locality"].tolist()
+    locality_list = df["average_clustering"].tolist()
     plt.scatter(heterogeneity_list, locality_list)
+    plt.show()
+
+
+def plot_heterogeneity_locality_difference(girg_csv, satgirg_csv):
+    girg_df = pd.read_csv(girg_csv)
+    satgirg_df = pd.read_csv(satgirg_csv)
+
+    fig, ax = plt.subplots()
+    girg_edges = girg_df["number_of_edges"].tolist()
+    satgirg_edges = satgirg_df["number_of_edges"].tolist()
+    zs = np.concatenate([girg_edges, satgirg_edges], axis=0)
+    min_, max_ = zs.min(), zs.max()
+
+    girg_heterogeneity_list = girg_df["heterogeneity"].tolist()
+    girg_locality_list = girg_df["average_clustering"].tolist()
+    satgirg_heterogeneity_list = satgirg_df["heterogeneity"].tolist()
+    satgirg_locality_list = satgirg_df["average_clustering"].tolist()
+    plt.scatter(girg_heterogeneity_list, girg_locality_list, c=girg_edges, label="girgs", cmap='viridis_r', marker='s')
+    plt.clim(min_, max_)
+    plt.scatter(satgirg_heterogeneity_list, satgirg_locality_list, c=satgirg_edges, label="satgirgs", cmap='viridis_r', marker='o')
+    plt.clim(min_, max_)
+    plt.colorbar().set_label('number of edges', rotation=270, labelpad=15)
+
+    plt.xlabel("heterogeneity")
+    plt.ylabel("average clustering")
+    plt.legend()
     plt.show()
 
 
@@ -139,7 +169,20 @@ def plot_degree_distribution(g: nx.Graph):
     plt.show()
 
 
+def plot_number_of_vertices_edges_relation(graphs: string):
+    df = pd.read_csv(graphs)
+    param_configs = df["param_config"].tolist()
+    number_of_vertices = df["number_of_nodes"].tolist()
+    number_of_edges = df["number_of_edges"].tolist()
+    plt.scatter(number_of_vertices, number_of_edges)
+    plt.xlabel("number of vertices")
+    plt.ylabel("number of edges")
+    plt.show()
+
+
+
 if __name__ == '__main__':
-    chunked_graphs = get_chunks_of_graph("power_law_temperature_graphs/satgirgs")
-    generate_csv("graph_properties.csv", chunked_graphs)
-    # plot_heterogeneity_locality("satgirg_heterogeneity_locality_experiment.csv")
+    # chunked_graphs = get_chunks_of_graph("power_law_temperature_graphs/second_girgs")
+    # generate_csv("girg_low_temperature_properties.csv", chunked_graphs)
+    plot_number_of_vertices_edges_relation("measurements/satgirg_properties.csv")
+    # plot_heterogeneity_locality_difference("measurements/girg_properties.csv", "measurements/satgirg_properties.csv")
