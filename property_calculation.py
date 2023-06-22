@@ -66,7 +66,7 @@ def get_vertices_edges_graph_chunks(directory: str):
     return graph_dict
 
 
-def get_ple_temperature_graph_chunks(directory: str):
+def run_power_law_temperature_experiment(directory: str, experiment_id: ObjectId):
     filenames = os.listdir(directory)
     graph_dict = {}
     counter = 0
@@ -85,11 +85,11 @@ def get_ple_temperature_graph_chunks(directory: str):
             graph_dict[key].append(get_largest_connected_component(read_graph(f"{directory}/{filename}")))
             counter += 1
 
-            # logging
             if (counter % 5) == 0:
+                # logging
                 print(key)
-
-    return graph_dict
+                calculate_properties(graph_dict, experiment_id)
+                graph_dict = {}
 
 
 def calculate_average_degree(g: nx.Graph):
@@ -115,6 +115,10 @@ def calculate_heterogeneity(g: nx.Graph):
     coefficient_of_variation = math.sqrt(variance) / avg_degree
     heterogeneity = math.log10(coefficient_of_variation)
     return heterogeneity
+
+
+def calculate_clustering_coefficient_approximation(g: nx.Graph):
+    return nx.approximation.average_clustering(g, trials=50000, seed=1)
 
 
 def calculate_clustering_coefficient(g: nx.Graph):
@@ -171,35 +175,35 @@ def calculate_properties(graph_dict: dict, experiment_id: ObjectId):
         param_config = param_key.split()
         ple_value = param_config[0]
         t_value = param_config[1]
-        # sum_number_of_nodes = 0
-        # sum_number_of_edges = 0
-        # sum_average_degree = 0
+        sum_number_of_nodes = 0
+        sum_number_of_edges = 0
+        sum_average_degree = 0
         sum_diameter = 0
-        # sum_heterogeneity = 0
-        # sum_clustering = 0
+        sum_heterogeneity = 0
+        sum_clustering = 0
         for graph in graph_dict[param_key]:
-            # sum_number_of_nodes += graph.number_of_nodes()
-            # sum_number_of_edges += graph.number_of_edges()
-            # sum_average_degree += calculate_average_degree(graph)
+            sum_number_of_nodes += graph.number_of_nodes()
+            sum_number_of_edges += graph.number_of_edges()
+            sum_average_degree += calculate_average_degree(graph)
             sum_diameter += calculate_diameter_approximation(graph)
-            # sum_heterogeneity += calculate_heterogeneity(graph)
-            # sum_clustering += calculate_clustering_coefficient(graph)
+            sum_heterogeneity += calculate_heterogeneity(graph)
+            sum_clustering += calculate_clustering_coefficient(graph)
 
-        # number_of_nodes_measurement = sum_number_of_nodes / len(graph_dict[param_key])
-        # number_of_edges_measurement = sum_number_of_edges / len(graph_dict[param_key])
-        # average_degree_measurement = sum_average_degree / len(graph_dict[param_key])
+        number_of_nodes_measurement = sum_number_of_nodes / len(graph_dict[param_key])
+        number_of_edges_measurement = sum_number_of_edges / len(graph_dict[param_key])
+        average_degree_measurement = sum_average_degree / len(graph_dict[param_key])
         diameter_measurement = sum_diameter / len(graph_dict[param_key])
-        # heterogeneity_measurement = sum_heterogeneity / len(graph_dict[param_key])
-        # clustering_measurement = sum_clustering / len(graph_dict[param_key])
+        heterogeneity_measurement = sum_heterogeneity / len(graph_dict[param_key])
+        clustering_measurement = sum_clustering / len(graph_dict[param_key])
         insert_datapoint(experiment_id,
                          {"power_law_exponent": ple_value,
                           "temperature": t_value,
-                          # "number_of_nodes": round(number_of_nodes_measurement),
-                          # "number_of_edges": round(number_of_edges_measurement),
-                          # "average_degree": average_degree_measurement,
-                          "diameter": diameter_measurement},
-                          # "heterogeneity": heterogeneity_measurement,
-                          # "average_clustering": clustering_measurement},
+                          "number_of_nodes": round(number_of_nodes_measurement),
+                          "number_of_edges": round(number_of_edges_measurement),
+                          "average_degree": average_degree_measurement,
+                          "diameter": diameter_measurement,
+                          "heterogeneity": heterogeneity_measurement,
+                          "average_clustering": clustering_measurement},
                          "thesis_nicola")
 
         # logging
